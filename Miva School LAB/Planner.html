@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Planner</title>
+    <link rel="stylesheet" href="design.css">
+</head>
+<body>
+    <header>
+        <h1>Emmanuel's MIVA Portfolio</h1>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="about.html">About Me</a></li>
+                <li><a href="projects.html">Projects</a></li>
+                <li><a href="planner.html" class="active">Planner</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <section class="planner">
+            <h2>Interactive Academic Planner</h2>
+            
+            <div class="input-row">
+                <input type="text" id="taskInput" placeholder="Enter academic task (e.g., Study COS 106)...">
+                <button id="addTaskBtn" class="btn">Add Task</button>
+            </div>
+
+            <ul id="taskList">
+            </ul>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 MIVA Open University All Rights Reserved</p>
+    </footer>
+
+    <script src="Javascript.js"></script>
+</body>
+</html>
