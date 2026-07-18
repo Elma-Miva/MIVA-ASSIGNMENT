@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Random True Things</title>
+  <style>
+    :root {
+      --bg: #0f1722;
+      --card: #0b1a2b;
+      --accent: #58a6ff;
+      --muted: #94a3b8;
+      --glass: rgba(255,255,255,0.03);
+    }
+    html,body { height:100%; margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; background: linear-gradient(180deg,#071122 0%, #0f1722 100%); color:#e6eef6; display:flex; align-items:center; justify-content:center; }
+    .card {
+      width: min(760px, 94vw);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:12px;
+      box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+      padding: 28px;
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+    h1 { margin:0 0 8px 0; font-size:20px; letter-spacing:0.2px; color: #f1f8ff; }
+    p.lead { margin:0 0 18px 0; color:var(--muted); font-size:13px; }
+    .fact {
+      background: var(--glass);
+      padding:18px;
+      border-radius:10px;
+      min-height:84px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      transition: transform 240ms ease, opacity 240ms ease;
+    }
+    .fact .text { font-size:18px; line-height:1.35; margin-bottom:8px; }
+    .fact .source { font-size:13px; color:var(--muted); }
+    .controls { margin-top:16px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    button, .toggle {
+      background: linear-gradient(180deg,#0f2a44,#092034);
+      color:#eaf6ff;
+      border: none;
+      padding:10px 14px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:600;
+      font-size:13px;
+      box-shadow: 0 3px 10px rgba(2,6,23,0.6);
+    }
+    button.secondary { background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--muted); font-weight:600; }
+    .small { padding:8px 10px; font-size:13px; }
+    .meta { margin-left:auto; color:var(--muted); font-size:13px; display:flex; gap:12px; align-items:center; }
+    a.source-link { color:var(--accent); text-decoration:none; }
+    .footer { margin-top:16px; color:var(--muted); font-size:13px; display:flex; gap:12px; justify-content:space-between; align-items:center; }
+    .fade-out { opacity:0; transform: translateY(8px) scale(.995); }
+    footer small { color:var(--muted); }
+    @media (max-width:520px){
+      .fact .text { font-size:16px; }
+      .meta { display:none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="card" role="main">
+    <header>
+      <h1>Random True Things</h1>
+      <p class="lead">Click "Show another" (or press space) to see a random true fact with a source. Facts are curated and linked so you can read more.</p>
+    </header>
+
+    <section id="display" class="fact" aria-live="polite" aria-atomic="true">
+      <div id="fact-text" class="text">Loading a true thing…</div>
+      <div class="source"><a id="fact-source" class="source-link" href="#" target="_blank" rel="noopener">Source</a></div>
+    </section>
+
+    <div class="controls" role="toolbar" aria-label="Actions">
+      <button id="newFact" class="small">Show another</button>
+      <button id="copyFact" class="small secondary">Copy</button>
+      <button id="shareFact" class="small secondary">Share</button>
+
+      <label style="display:flex;align-items:center;gap:8px;margin-left:8px;">
+        <input id="autoToggle" type="checkbox" style="width:16px;height:16px;margin:0;" />
+        <span style="color:var(--muted);font-size:13px;">Auto-rotate</span>
+      </label>
+
+      <div class="meta" aria-hidden="true">
+        <span id="count"></span>
+        <span id="lastShown"></span>
+      </div>
+    </div>
+
+    <div class="footer">
+      <small>Facts curated from reputable sources (Wikipedia, NASA, Britannica, National Geographic, etc.).</small>
+      <small id="hint">Tip: press Space to get a new fact.</small>
+    </div>
+  </main>
+
+  <script>
+    // A curated list of true facts with links to reputable sources.
+    // If you add items, provide {text, url, label} objects.
+    const facts = [
+      { text: "Honey does not spoil — edible honey has been found in ancient Egyptian tombs.", url: "https://en.wikipedia.org/wiki/Honey", label: "Wikipedia: Honey" },
+      { text: "Octopuses have three hearts and blue blood.", url: "https://www.britannica.com/animal/octopus-mollusk", label: "Britannica: Octopus" },
+      { text: "Bananas are botanically berries; strawberries are not true berries.", url: "https://en.wikipedia.org/wiki/Berry_(botany)", label: "Wikipedia: Berry (botany)" },
+      { text: "A day on Venus (rotation period) is longer than a Venusian year (orbital period).", url: "https://solarsystem.nasa.gov/planets/venus/overview/", label: "NASA: Venus" },
+      { text: "There are more trees on Earth than stars in the Milky Way — estimates put trees at ~3 trillion.", url: "https://en.wikipedia.org/wiki/Tree#Number_of_trees", label: "Wikipedia: Trees" },
+      { text: "Wombats produce cube-shaped feces — a rare natural quirk that helps them mark territory.", url: "https://www.nationalgeographic.com/animals/article/wombats-poop-cubes", label: "NatGeo: Wombat poop" },
+      { text: "Sharks existed before trees: cartilaginous fish predate many terrestrial plants.", url: "https://www.nationalgeographic.com/animals/article/sharks-evolution", label: "NatGeo: Shark evolution" },
+      { text: "Cleopatra lived closer in time to the first Moon landing (1969) than to the construction of the Great Pyramid (~2560 BC).", url: "https://en.wikipedia.org/wiki/Cleopatra", label: "Wikipedia: Cleopatra" },
+      { text: "Light from the Sun takes about 8 minutes 20 seconds to reach Earth.", url: "https://en.wikipedia.org/wiki/Speed_of_light", label: "Wikipedia: Speed of light" },
+      { text: "The Moon is receding from Earth at roughly 3.8 centimeters per year (measured by lunar laser ranging).", url: "https://en.wikipedia.org/wiki/Moon#Orbit", label: "Wikipedia: Moon orbit" },
+      { text: "Mauna Kea is taller than Mount Everest when measured from its base on the ocean floor.", url: "https://www.usgs.gov/faqs/which-mountain-tallest-earth", label: "USGS: Tallest mountain" },
+      { text: "The Eiffel Tower can be up to ~15 cm taller in hot weather because the iron expands when warm.", url: "https://www.toureiffel.paris/en/the-monument", label: "Official: Eiffel Tower" },
+      { text: "Venus rotates 'backwards' (retrograde), so it spins in the opposite direction to most planets.", url: "https://solarsystem.nasa.gov/planets/venus/overview/", label: "NASA: Venus" },
+      { text: "The University of Oxford taught students centuries before the Aztec Empire formed.", url: "https://www.britannica.com/topic/University-of-Oxford", label: "Britannica: Oxford" },
+      { text: "Under certain conditions, hot water can freeze faster than cold water (the Mpemba effect) — it's been observed and debated in experiments.", url: "https://en.wikipedia.org/wiki/Mpemba_effect", label: "Wikipedia: Mpemba effect" }
+    ];
+
+    // UI elements
+    const factTextEl = document.getElementById('fact-text');
+    const factSourceEl = document.getElementById('fact-source');
+    const newFactBtn = document.getElementById('newFact');
+    const copyBtn = document.getElementById('copyFact');
+    const shareBtn = document.getElementById('shareFact');
+    const autoToggle = document.getElementById('autoToggle');
+    const countEl = document.getElementById('count');
+    const lastShownEl = document.getElementById('lastShown');
+
+    // State
+    let lastIndex = -1;
+    let shown = 0;
+    let autoTimer = null;
+
+    function randIndex() {
+      if (facts.length === 0) return -1;
+      // Avoid immediate repeats: pick until different (limited attempts)
+      let i, tries = 0;
+      do {
+        i = Math.floor(Math.random() * facts.length);
+        tries++;
+      } while (i === lastIndex && tries < 12);
+      return i;
+    }
+
+    function showFact(i, opts = {}) {
+      if (i < 0 || i >= facts.length) return;
+      const f = facts[i];
+      // animation: fade
+      const display = document.getElementById('display');
+      display.classList.add('fade-out');
+      setTimeout(() => {
+        factTextEl.textContent = f.text;
+        factSourceEl.textContent = f.label || f.url;
+        factSourceEl.href = f.url || '#';
+        lastIndex = i;
+        shown++;
+        updateMeta();
+        display.classList.remove('fade-out');
+        if (opts.focus) newFactBtn.focus();
+      }, 200);
+    }
+
+    function showRandom() {
+      const i = randIndex();
+      showFact(i);
+    }
+
+    function updateMeta() {
+      countEl.textContent = `${shown} shown`;
+      lastShownEl.textContent = `Facts: ${facts.length}`;
+      // readable timestamp
+      lastShownEl.title = new Date().toLocaleString();
+    }
+
+    function startAuto() {
+      if (autoTimer) clearInterval(autoTimer);
+      autoTimer = setInterval(showRandom, 5000);
+    }
+
+    function stopAuto() {
+      if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+    }
+
+    // copy to clipboard
+    async function copyCurrent() {
+      const text = `${factTextEl.textContent} — ${factSourceEl.href}`;
+      try {
+        await navigator.clipboard.writeText(text);
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => copyBtn.textContent = 'Copy', 1200);
+      } catch (e) {
+        copyBtn.textContent = 'Copy (failed)';
+        setTimeout(() => copyBtn.textContent = 'Copy', 1200);
+      }
+    }
+
+    // share via Web Share API if available, fallback to navigator.clipboard
+    async function shareCurrent() {
+      const text = `${factTextEl.textContent}\nSource: ${factSourceEl.href}`;
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: 'Random true thing', text, url: factSourceEl.href });
+        } catch (e) {
+          /* user cancelled or failed */
+        }
+      } else {
+        try {
+          await navigator.clipboard.writeText(text);
+          shareBtn.textContent = 'Link copied';
+          setTimeout(() => shareBtn.textContent = 'Share', 1400);
+        } catch (e) {
+          shareBtn.textContent = 'Share (failed)';
+          setTimeout(() => shareBtn.textContent = 'Share', 1400);
+        }
+      }
+    }
+
+    // Event handlers
+    newFactBtn.addEventListener('click', showRandom);
+    copyBtn.addEventListener('click', copyCurrent);
+    shareBtn.addEventListener('click', shareCurrent);
+    autoToggle.addEventListener('change', (e) => {
+      if (e.target.checked) startAuto(); else stopAuto();
+    });
+
+    // Spacebar shows another (avoid triggering while focusing inputs)
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && !['INPUT','TEXTAREA','BUTTON'].includes(document.activeElement.tagName)) {
+        e.preventDefault();
+        showRandom();
+      }
+    });
+
+    // Initialize: shuffle once and show first fact
+    (function init() {
+      // simple Fisher–Yates shuffle to randomize order for the first pass
+      for (let i = facts.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [facts[i], facts[j]] = [facts[j], facts[i]];
+      }
+      showFact(0);
+      lastIndex = 0;
+      shown = 1;
+      updateMeta();
+    })();
+
+    // Optional: reduce motion for users who prefer it
+    const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) {
+      document.documentElement.style.setProperty('--glass', 'rgba(255,255,255,0.02)');
+    }
+  </script>
+<!-- Code injected by live-server -->
+<script>
+	// <![CDATA[  <-- For SVG support
+	if ('WebSocket' in window) {
+		(function () {
+			function refreshCSS() {
+				var sheets = [].slice.call(document.getElementsByTagName("link"));
+				var head = document.getElementsByTagName("head")[0];
+				for (var i = 0; i < sheets.length; ++i) {
+					var elem = sheets[i];
+					var parent = elem.parentElement || head;
+					parent.removeChild(elem);
+					var rel = elem.rel;
+					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+					}
+					parent.appendChild(elem);
+				}
+			}
+			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+			var address = protocol + window.location.host + window.location.pathname + '/ws';
+			var socket = new WebSocket(address);
+			socket.onmessage = function (msg) {
+				if (msg.data == 'reload') window.location.reload();
+				else if (msg.data == 'refreshcss') refreshCSS();
+			};
+			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+				console.log('Live reload enabled.');
+				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+			}
+		})();
+	}
+	else {
+		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+	}
+	// ]]>
+</script>
+</body>
+</html>
